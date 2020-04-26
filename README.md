@@ -1,165 +1,76 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project 3: Web APIs & NLP
+# Natual Language Processing
 
-### Description
+### How accurately can the words in a subreddit's post predict whether the post was intended for a 'good advice' or 'bad advice' subreddit?
 
-In week four we've learned about a few different classifiers. In week five we'll learn about webscraping, APIs, and Natural Language Processing (NLP). This project will put those skills to the test.
+-------------------------------------------------
 
-For project 3, your goal is two-fold:
-1. Using [Pushshift's](https://github.com/pushshift/api) API, you'll collect posts from two subreddits of your choosing.
-2. You'll then use NLP to train a classifier on which subreddit a given post came from. This is a binary classification problem.
+***Executive Summary***
 
+### Notes on the Data and Subreddits:
 
-#### About the API
+**LifeProTips: (LPT)**
+- "Tips that improve your life in one way or another"
+- A subreddit dedicated to sharing 'helpful' user-provided advice for navigating a plethora of sitautions.
 
-Pushshift's API is fairly straightforward. For example, if I want the posts from [`/r/boardgames`](https://www.reddit.com/r/boardgames), all I have to do is use the following url: https://api.pushshift.io/reddit/search/submission?subreddit=boardgames
+**UnethicalLifeProTips: (ULPT)**
+- "An Unethical Life Pro Tip (or ULPT) is a tip that improves your life in a meaningful way, perhaps at the    
+expense of others and/or with questionable legality. Due to their nature, do not actually follow any of these
+tips–they're just for fun. Share your best tips you've picked up throughout your life, and learn from others!"
+- A subreddit dedicated to sharing mocking, 'joke' user-provided 'advice on a number of subjects and situations
 
-To help you get started, we have a primer video on how to use the API: https://youtu.be/AcrjEWsMi_E
+### Predictors and Target Variable:
 
----
+- The predictor variable is `title`.
+- The target variable is `subreddit`.
 
-### Requirements
+***Contents:***
 
-- Gather and prepare your data using the `requests` library.
-- **Create and compare two models**. One of these must be a Bayes classifier, however the other can be a classifier of your choosing: logistic regression, KNN, SVM, etc.
-- A Jupyter Notebook with your analysis for a peer audience of data scientists.
-- An executive summary of your results.
-- A short presentation outlining your process and findings for a semi-technical audience.
+- <b>Notes on Data & Import</b>
 
-**Pro Tip:** You can find a good example executive summary [here](https://www.proposify.biz/blog/executive-summary).
+  - Imported data directly from Reddit using the Pushshift API. For the final model testing, 1000 posts were pulled from both the LPT and ULPT subreddits. **Notes on the raw data files:**
+    - <b>Raw Posts</b>
+      - A  custom function was create to automate the API pull from Reddit.
+        1) Variabilizes the 'base' url of the Pushshift API
+        2) Uses two editable dictionaries of parameters to add-on to the API URL
+        3) Assign the` HTTP Response` request and variabilize the `status code`.
+        4) An if statement checks that the value of the `status_code` for both subreddits are within the bounds of `Success 2XX`.
+        5) If successful:
+          - The `JSON` is read-in for each subreddit,
+          - The posts are saved from each `JSON`
+      - Many posts contain a user-provided ‘subreddit-name’ call, which effectively identifies the subject of the post, and the subreddit on which the post is being made.
+      - A large number of posts also only contain post-content in the title section of the post. Although some posts on either subreddit do have text passed into the ‘body’ of the post (for our purposes this was the `selftext` section of the JSON we pulled from via API), a lot of what I was seeing had the majority of content in the title.
 
----
+- <b>Data Cleaning</b>
+  - Although there it is otherwise sensible to consider the text contained in the body of a post to be relevant, we found it easier (logistically) to omit the body from the modeling and focus on the posts' `title`.\
+    - One API pull, for example, had almost 60% of posts containing only a string of `[removed]` or `[deleted]`, as well as `NaN` for the `selftext` field. Due to the fact that so many posts relay their content in the title itself, we decided to move forward with that.
+  - Some obvious words popped up as candidates for stopwords. Because almost every post contained some sort of ‘key-word’ that would make predictions too easy, the LifeProTips and UnethicalLifeProTips ‘tags’ were discarded as stopwords.
+    - A common typo or other pattern that became evident was the ‘lpt’/’ulpt’ identifier to be attached as one word to the word ‘request’, so these were removed as well.
+  - The title of each post was lemmatizing, stripped of HTML artifacts, and  removed of stopwords. In some cases, lemmatization helped to 'correct' typos.
 
-### Necessary Deliverables / Submission
+- <b>Feature Engineering</b>
+  - The target variable `subreddit` was binarized as `1` for posts belonging to LPT, and `0` for posts belonging to ULPT.
+- <b>Modeling</b>
+  - Every model tested was evaluated based on model accuracy-
+  - The models tested: **Logistic Regression**, **K-Nearest Neighbors**, and **Naive Bayes Multinomial**. Each model was almost tested with both the **CountVectorizer** and **TfidfVectorizer** transformers.
+  - `Baseline Accuracy` was checked, to evaluate what the models were measuring against/ compared to.
+  - A `Pipeline` was created for each model, each of which were `GridSearch`'d over to test, evaluate, and tune the `Hyperparameters` of the models.  
 
-- Code and executive summary must be in a clearly commented Jupyter Notebook.
-- You must submit your slide deck.
-- Materials must be submitted by **10:00 AM on Friday, April 24th**.
+-------------------------------------------------
+### <b>Data Dictionary of Included Variables in Model Feature Set</b>:
 
----
-
-## Rubric
-Your local instructor will evaluate your project (for the most part) using the following criteria.  You should make sure that you consider and/or follow most if not all of the considerations/recommendations outlined below **while** working through your project.
-
-For Project 3 the evaluation categories are as follows:<br>
-**The Data Science Process**
-- Problem Statement
-- Data Collection
-- Data Cleaning & EDA
-- Preprocessing & Modeling
-- Evaluation and Conceptual Understanding
-- Conclusion and Recommendations
-
-**Organization and Professionalism**
-- Organization
-- Visualizations
-- Python Syntax and Control Flow
-- Presentation
-
-**Scores will be out of 30 points based on the 10 categories in the rubric.** <br>
-*3 points per section*<br>
-
-| Score | Interpretation |
-| --- | --- |
-| **0** | *Project fails to meet the minimum requirements for this item.* |
-| **1** | *Project meets the minimum requirements for this item, but falls significantly short of portfolio-ready expectations.* |
-| **2** | *Project exceeds the minimum requirements for this item, but falls short of portfolio-ready expectations.* |
-| **3** | *Project meets or exceeds portfolio-ready expectations; demonstrates a thorough understanding of every outlined consideration.* |
+|Feature|Type|Process|Description|
+|---|---|---|---|
+|`title`|Vectorized String Object|Using the Vectorizers, the counts of words from each post was passed into the models.|Lemmatized, scrubbed of HTML, and checked for stopwords.|
+|`subreddit`|`binarized` object|The target variables in the  dataset|Binarized as `1` for LPT, `0` for ULPT|
 
 
-### The Data Science Process
 
-**Problem Statement**
-- Is it clear what the goal of the project is?
-- What type of model will be developed?
-- How will success be evaluated?
-- Is the scope of the project appropriate?
-- Is it clear who cares about this or why this is important to investigate?
-- Does the student consider the audience and the primary and secondary stakeholders?
+-------------------------------------------------
+### ***Conclusions***
 
-**Data Collection**
-- Was enough data gathered to generate a significant result?
-- Was data collected that was useful and relevant to the project?
-- Was data collection and storage optimized through custom functions, pipelines, and/or automation?
-- Was thought given to the server receiving the requests such as considering number of requests per second?
-
-**Data Cleaning and EDA**
-- Are missing values imputed/handled appropriately?
-- Are distributions examined and described?
-- Are outliers identified and addressed?
-- Are appropriate summary statistics provided?
-- Are steps taken during data cleaning and EDA framed appropriately?
-- Does the student address whether or not they are likely to be able to answer their problem statement with the provided data given what they've discovered during EDA?
-
-**Preprocessing and Modeling**
-- Is text data successfully converted to a matrix representation?
-- Are methods such as stop words, stemming, and lemmatization explored?
-- Does the student properly split and/or sample the data for validation/training purposes?
-- Does the student test and evaluate a variety of models to identify a production algorithm (**AT MINIMUM:** Bayes and one other model)?
-- Does the student defend their choice of production model relevant to the data at hand and the problem?
-- Does the student explain how the model works and evaluate its performance successes/downfalls?
-
-**Evaluation and Conceptual Understanding**
-- Does the student accurately identify and explain the baseline score?
-- Does the student select and use metrics relevant to the problem objective?
-- Does the student interpret the results of their model for purposes of inference?
-- Is domain knowledge demonstrated when interpreting results?
-- Does the student provide appropriate interpretation with regards to descriptive and inferential statistics?
-
-**Conclusion and Recommendations**
-- Does the student provide appropriate context to connect individual steps back to the overall project?
-- Is it clear how the final recommendations were reached?
-- Are the conclusions/recommendations clearly stated?
-- Does the conclusion answer the original problem statement?
-- Does the student address how findings of this research can be applied for the benefit of stakeholders?
-- Are future steps to move the project forward identified?
+- **The `Multinomial Naive Bayes` model, with a `CountVectorizer` had the best `accuracy` in predicting the subreddit based on the words in a given post. On one test, the model had a mean `CV` score of `0.80` `accuracy`.**
+- **All models tested proved to be overfit, often performing far worse on `Test` data than `Train` data.**
 
 
-### Organization and Professionalism
-
-**Project Organization**
-- Are modules imported correctly (using appropriate aliases)?
-- Are data imported/saved using relative paths?
-- Does the README provide a good executive summary of the project?
-- Is markdown formatting used appropriately to structure notebooks?
-- Are there an appropriate amount of comments to support the code?
-- Are files & directories organized correctly?
-- Are there unnecessary files included?
-- Do files and directories have well-structured, appropriate, consistent names?
-
-**Visualizations**
-- Are sufficient visualizations provided?
-- Do plots accurately demonstrate valid relationships?
-- Are plots labeled properly?
-- Are plots interpreted appropriately?
-- Are plots formatted and scaled appropriately for inclusion in a notebook-based technical report?
-
-**Python Syntax and Control Flow**
-- Is care taken to write human readable code?
-- Is the code syntactically correct (no runtime errors)?
-- Does the code generate desired results (logically correct)?
-- Does the code follows general best practices and style guidelines?
-- Are Pandas functions used appropriately?
-- Are `sklearn` and `NLTK` methods used appropriately?
-
-**Presentation**
-- Is the problem statement clearly presented?
-- Does a strong narrative run through the presentation building toward a final conclusion?
-- Are the conclusions/recommendations clearly stated?
-- Is the level of technicality appropriate for the intended audience?
-- Is the student substantially over or under time?
-- Does the student appropriately pace their presentation?
-- Does the student deliver their message with clarity and volume?
-- Are appropriate visualizations generated for the intended audience?
-- Are visualizations necessary and useful for supporting conclusions/explaining findings?
-
-
----
-
-### Why did we choose this project for you?
-This project covers three of the biggest concepts we cover in the class: Classification Modeling, Natural Language Processing and Data Wrangling/Acquisition.
-
-Part 1 of the project focuses on **Data wrangling/gathering/acquisition**. This is a very important skill as not all the data you will need will be in clean CSVs or a single table in SQL.  There is a good chance that wherever you land you will have to gather some data from some unstructured/semi-structured sources; when possible, requesting information from an API, but often scraping it because they don't have an API (or it's terribly documented).
-
-Part 2 of the project focuses on **Natural Language Processing** and converting standard text data (like Titles and Comments) into a format that allows us to analyze it and use it in modeling.
-
-Part 3 of the project focuses on **Classification Modeling**.  Given that project 2 was a regression focused problem, we needed to give you a classification focused problem to practice the various models, means of assessment and preprocessing associated with classification.   
+### ***Additional Info Desired***
+- Some deeper analysis into the comparative performances across each model type would add more insight.
